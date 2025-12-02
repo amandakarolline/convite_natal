@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 import smtplib
 from email.mime.text import MIMEText
-rom dotenv import load_dotenv
+from dotenv import load_dotenv
 import os
 
 app = Flask(__name__)
@@ -45,3 +45,4 @@ def home():
 
 if __name__ == "__main__":
     app.run()
+
