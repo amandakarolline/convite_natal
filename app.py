@@ -3,8 +3,10 @@ import smtplib
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
 import os
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 # CONFIGURAÇÃO DO EMAIL
 load_dotenv()
@@ -45,4 +47,5 @@ def home():
 
 if __name__ == "__main__":
     app.run()
+
 
