@@ -1,31 +1,39 @@
 from flask import Flask, request, jsonify
-import smtplib
-from email.mime.text import MIMEText
-from dotenv import load_dotenv
 import os
-from flask_cors import CORS
+import requests
+from dotenv import load_dotenv
 
-app = Flask(__name__)
-CORS(app)
-
-# CONFIGURAÇÃO DO EMAIL
 load_dotenv()
+app = Flask(__name__)
 
-EMAIL_HOST = os.getenv("EMAIL_HOST")
-EMAIL_PORT = int(os.getenv("EMAIL_PORT"))
-EMAIL_USER = os.getenv("EMAIL_USER")
-EMAIL_PASS = os.getenv("EMAIL_PASS")
+SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
+SENDGRID_FROM_EMAIL = os.getenv("SENDGRID_FROM_EMAIL")
+SENDGRID_TO_EMAIL = os.getenv("SENDGRID_TO_EMAIL")
 
 def enviar_email(mensagem):
-    msg = MIMEText(mensagem)
-    msg['Subject'] = "Resposta ao convite"
-    msg['From'] = EMAIL_USER
-    msg['To'] = EMAIL_USER
+    url = "https://api.sendgrid.com/v3/mail/send"
 
-    with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as smtp:
-        smtp.starttls()
-        smtp.login(EMAIL_USER, EMAIL_PASS)
-        smtp.send_message(msg)
+    data = {
+        "personalizations": [{
+            "to": [{"email": SENDGRID_TO_EMAIL}],
+            "subject": "Resposta ao convite"
+        }],
+        "from": {"email": SENDGRID_FROM_EMAIL},
+        "content": [{
+            "type": "text/plain",
+            "value": mensagem
+        }]
+    }
+
+    headers = {
+        "Authorization": f"Bearer {SENDGRID_API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    response = requests.post(url, json=data, headers=headers)
+
+    if response.status_code >= 400:
+        raise Exception(f"Erro ao enviar email: {response.text}")
 
 @app.route("/notificar", methods=["POST"])
 def notificar():
@@ -35,17 +43,15 @@ def notificar():
     if not mensagem:
         return jsonify({"error": "Mensagem vazia"}), 400
 
-    enviar_email(mensagem)
-
-    return jsonify({"status": "ok"}), 200
-
+    try:
+        enviar_email(mensagem)
+        return jsonify({"status": "ok"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/")
 def home():
-    return "API de Notificação funcionando!"
-
+    return "API de Notificação com SendGrid funcionando!"
 
 if __name__ == "__main__":
     app.run()
-
-
